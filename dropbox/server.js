@@ -37,56 +37,29 @@ var text = textFile.toString()
 
 
 //-----------------------------FILE UPLOADING-------------------------------------//
-function uploadFile(tmpStrListStr) {
-  var tmpStrList = "";
-  var uploadSuccess = false;
-  tmpStrList = tmpStrListStr.substring(0, tmpStrListStr.length - 1).split(",");
-  istrue = true;
-  for (var i = 0; i < tmpStrList.length; i++) {
-    //var path = cordova.file.externalRootDirectory + '/Test/Logs/' + tmpStrList[i] + '.pdf';
-    window.resolveLocalFileSystemURL(path, function (fileEntry) {
 
-      fileEntry.file(function (file) {
-        var reader = new FileReader();
+var fileCommitInfo = {};
+fileCommitInfo.contents = text;
+fileCommitInfo.path = '/group 1/test text.txt';
+fileCommitInfo.mode = { '.tag': 'overwrite' };
+fileCommitInfo.autorename = true;
+fileCommitInfo.mute = true;
 
-        reader.onloadend = function (e) {
+dbx.filesUpload(fileCommitInfo)
+  .then(function (response) {
+    console.log(response);
+  })
+  .catch(function (errr) {
+    console.log(errr);
+  });
 
-          var fileCommitInfo = {};
-          fileCommitInfo.contents = textFile;
-          fileCommitInfo.path = '/T-Comms testing' + textFile.name;
-          fileCommitInfo.mode = { '.tag': 'overwrite' };
-          fileCommitInfo.autorename = true;
-          fileCommitInfo.mute = true;
-
-          dbx.filesUpload(fileCommitInfo)
-            .then(function (response) {
-              alert(response);
-            })
-            .catch(function (errr) {
-              console.log(errr);
-            });
-
-          }
-
-          reader.readAsDataURL(file);
-      });
-
-  }, function (e) {
-        console.log("FileSystem Error");
-        console.dir(e);
-    });
-
-   }
-
-}
-
-        //------------------------CIPHERING-------------------------------------------------//
-        var ciphertext = CryptoJS.AES.encrypt(text, 'secret key 123');
-        console.log("This is the message pre-encryption: " + text);
-        console.log("This is the message encrypted: " + ciphertext);
-        var bytes = CryptoJS.AES.decrypt(ciphertext.toString(), 'secret key 123');
-        console.log(ciphertext)
-        var plaintext = bytes.toString(CryptoJS.enc.Utf8);
-        console.log("This is the message decrypted: " + plaintext);
+//------------------------CIPHERING-------------------------------------------------//
+var ciphertext = CryptoJS.AES.encrypt(text, 'secret key 123');
+console.log("This is the message pre-encryption: " + text);
+console.log("This is the message encrypted: " + ciphertext);
+var bytes = CryptoJS.AES.decrypt(ciphertext.toString(), 'secret key 123');
+//console.log(ciphertext)
+var plaintext = bytes.toString(CryptoJS.enc.Utf8);
+console.log("This is the message decrypted: " + plaintext);
 
 //ayyyy we're decrypting bby
