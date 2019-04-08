@@ -16,11 +16,12 @@ var AES = require("crypto-js/aes");
 var SHA256 = require("crypto-js/sha256");
 var Dropbox = require('dropbox').Dropbox;
 var dbx = new Dropbox({ accessToken: 'DyQ1AM63lPAAAAAAAAAAjcKhGpnTxEfJkjaTh6skBrOszanCrbtVhfjdkgJHxZVK' });
-var newFolder = 'group folder0'
+var newFolder = 'group folder1'
 var sharedId = ''
 var sharingAddFolderMember = {};
 var sharingRemoveFolderMember = {};
-var enteredEmail = 'honera@tcd.ie'
+var SharingListFolderMembers = {};
+var enteredEmail = ''
 
 
 
@@ -39,7 +40,7 @@ function resolveAfter2Seconds() {
   return new Promise(resolve => {
     setTimeout(() => {
       resolve('resolved');
-    }, 1000);
+    }, 2000);
   });
 }
 
@@ -47,7 +48,6 @@ function resolveAfter2Seconds() {
 var fileCommitInfo = {};
 fileCommitInfo.contents = ciphertext;
 fileCommitInfo.path = '/' + newFolder + '/text.txt';
-//fileCommitInfo.mode = {update:'conflicted copy', '.tag': 'update'}
 fileCommitInfo.mode = { '.tag': 'overwrite' };
 fileCommitInfo.autorename = true;
 fileCommitInfo.mute = true;
@@ -59,15 +59,15 @@ async function createFolder() {
     var response = await dbx.sharingShareFolder({ path: '/' + newFolder })
     console.log('folder created')
   }
-  catch (e) { console.log('folder was not created' + JSON.stringify(e)) }
-  var result = await resolveAfter2Seconds();
+  catch (e) { console.log('folder was not created') }
+
 }
 
 //run upload
 async function upload() {
   try {
     var response = await dbx.filesUpload(fileCommitInfo)
-    console.log(response)
+    //console.log(response)
     sharedId = response.parent_shared_folder_id
   }
   catch (e) { console.log('your file upload failed' + JSON.stringify(e)) }
@@ -75,54 +75,89 @@ async function upload() {
 
 //run sharing
 async function sharing(enteredEmail) {
-  console.log('shared folder id: ' + sharedId)
   sharingAddFolderMember.shared_folder_id = sharedId
   sharingAddFolderMember.members = [{ member: { email: enteredEmail, '.tag': 'email' }, access_level: { '.tag': 'editor' } }]
   sharingAddFolderMember.quiet = true
   try {
     var responseSharing = await dbx.sharingAddFolderMember(sharingAddFolderMember)
-    //console.log(responseSharing)
   }
   catch (e) { console.log('folder failed to share' + JSON.stringify(e)) }
 }
+
+
 async function addAnother() {
-  readline.question(`Would you like to enter another email?(Y\N) `, (ans) => {
-    if (ans == 'Yes' ||ans == 'Y' ||ans == 'yes' ||ans == 'y')
-    {
+  readline.question(`Would you like to enter another email?(Y/N) `, (ans) => {
+    if (ans == 'Yes' || ans == 'Y' || ans == 'yes' || ans == 'y') {
       readline.question(`Enter the email now: `, (enteredEmail) => {
         console.log('\n' + enteredEmail + ' will now be joined to the folder')
         sharing(enteredEmail);
         addAnother();
-        //readline.close()
       })
     }
     else {
-      console.log('Goodbye')
-      
+      readline.question(`Would you like to remove an email?(Y/N) `, (ans) => {
+        if (ans == 'Yes' || ans == 'Y' || ans == 'yes' || ans == 'y') {
+          readline.question(`Enter the email now: `, (enteredEmail) => {
+            removing(enteredEmail)
+          })
+        }
+        else {
+          console.log('Goodbye.')
+         // readline.close()
+        }
+      })
+
     }
   })
 }
 
-async function removing() {
-  console.log('removing MEMEbers ')
-  sharingRemoveFolderMember.shared_folder_id = sharedId
-  sharingRemoveFolderMember.member = [{email: 'honera@tcd.ie'}]
-  sharingRemoveFolderMember.leave_a_copy = false
+async function removing(removeEmail) {
   try {
+    sharingRemoveFolderMember.shared_folder_id = sharedId
+    sharingRemoveFolderMember.member = { 'email': removeEmail, '.tag': 'email' }
+    sharingRemoveFolderMember.leave_a_copy = false
     var responseRemoving = await dbx.sharingRemoveFolderMember(sharingRemoveFolderMember)
-    //console.log(responseSharing)
+    //console.log(responseRemoving)
   }
   catch (e) { console.log('failed to remove member' + JSON.stringify(e)) }
 
 }
 
+async function download() {
+  SharingListFolderMembers.shared_folder_id = sharedId
+  SharingListFolderMembers.limit = 5
+  var response = await dbx.sharingListFolderMembers(SharingListFolderMembers)
+  console.log('this is the member listing response ' + JSON.stringify(response))
+  try {
+    var downloadresponse = await dbx.filesDownload({ path: '/' + newFolder + '/text.txt' })
+    console.log('this is the download response ' + JSON.stringify(downloadresponse))
+  }
+  catch (e) { console.log('your file download failed' + JSON.stringify(e)) }
+}
+
+
 async function start() {
   console.log('calling');
   await createFolder();
   await upload();
-  await sharing(enteredEmail);
-  addAnother();
-  //await removing();
+  readline.question(`Would you like to enter an email?(Y/N) `, (ans) => {
+    if (ans == 'Yes' || ans == 'Y' || ans == 'yes' || ans == 'y') {
+      readline.question(`Enter the email now: `, (enteredEmail) => {
+        sharing(enteredEmail);
+        addAnother();
+      })
+    }
+
+    readline.question(`Would you like to download the uploaded file?(Y/N) `, (ans) => {
+      if (ans == 'Yes' || ans == 'Y' || ans == 'yes' || ans == 'y') {
+        download();
+      }
+      else
+        console.log('okay')
+    })
+
+  })
+
 }
 
 
