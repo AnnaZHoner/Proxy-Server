@@ -3,6 +3,7 @@ const readline = require('readline').createInterface({
   output: process.stdout
 })
 
+
 var fs = require('fs');
 require('es6-promise').polyfill();
 require('isomorphic-fetch'); // or another library of choice.
@@ -32,8 +33,6 @@ var text = textFile.toString()
 
 //CIPHERING
 var ciphertext = CryptoJS.AES.encrypt(text, 'secret key 123');
-var bytes = CryptoJS.AES.decrypt(ciphertext.toString(), 'secret key 123');
-var plaintext = bytes.toString(CryptoJS.enc.Utf8);
 
 //add function delay
 function resolveAfter2Seconds() {
@@ -67,7 +66,6 @@ async function createFolder() {
 async function upload() {
   try {
     var response = await dbx.filesUpload(fileCommitInfo)
-    //console.log(response)
     sharedId = response.parent_shared_folder_id
   }
   catch (e) { console.log('your file upload failed' + JSON.stringify(e)) }
@@ -103,7 +101,6 @@ async function addAnother() {
         }
         else {
           console.log('Goodbye.')
-         // readline.close()
         }
       })
 
@@ -117,23 +114,71 @@ async function removing(removeEmail) {
     sharingRemoveFolderMember.member = { 'email': removeEmail, '.tag': 'email' }
     sharingRemoveFolderMember.leave_a_copy = false
     var responseRemoving = await dbx.sharingRemoveFolderMember(sharingRemoveFolderMember)
-    //console.log(responseRemoving)
   }
   catch (e) { console.log('failed to remove member' + JSON.stringify(e)) }
 
 }
 
 async function download() {
-  SharingListFolderMembers.shared_folder_id = sharedId
-  SharingListFolderMembers.limit = 5
-  var response = await dbx.sharingListFolderMembers(SharingListFolderMembers)
-  console.log('this is the member listing response ' + JSON.stringify(response))
   try {
-    var downloadresponse = await dbx.filesDownload({ path: '/' + newFolder + '/text.txt' })
-    console.log('this is the download response ' + JSON.stringify(downloadresponse))
+    SharingListFolderMembers.shared_folder_id = sharedId
+    SharingListFolderMembers.limit = 5
+    var response = await dbx.sharingListFolderMembers(SharingListFolderMembers)
+    toBytes = []
+    var stream 
+    stream = fs.createWriteStream('C:/Users/Anna Honer/Documents/CS3031/download.txt')
+    //response = await dbx.filesDownload('/' + newFolder + '/text.txt')
+
+
+    // toBytes = Encoding.ASCII.GetBytes(await response.GetContentAsStringAsync());
+    var bytes = CryptoJS.AES.decrypt(ciphertext.toString(), 'secret key 123');
+    var plaintext = bytes.toString(CryptoJS.enc.Utf8);
+
+    try {
+      stream.write(plaintext)
+      console.log('Your file has been downloaded.\nGoodbye.')
+      readline.close()
+      //fs = new FileStream(fileName, FileMode.Create, FileAccess.Write)
+      //{
+       // fs.Write(plaintext, 0, plaintext.Length);
+        //console.log('Goodbye')
+        //
+      //}
+    }
+    catch (e) {
+      console.log("Exception caught in process: {0}", e);
+    }
   }
-  catch (e) { console.log('your file download failed' + JSON.stringify(e)) }
+catch (e){ console.log('failed to download file' + JSON.stringify(e)) }
 }
+
+/*
+dbx.filesDownload({path: '/test.txt'})
+    .then(function (response) {
+        var blob = response.fileBlob;
+        var reader = new FileReader();
+        reader.addEventListener("loadend", function() {
+            console.log(reader.result); // will print out file content
+        });
+        reader.readAsText(blob);
+    })
+    .catch(function (error) {
+        ...
+    })
+*/
+
+
+//console.log('this is the member listing response ' + JSON.stringify(response))
+//console.log(response.invitees)
+// console.log('yeah all g')
+//try {
+//response = await dbx.filesDownload({ path: '/' + newFolder + '/text.txt' })
+//console.log(response)
+
+//var downloadresponse = await dbx.filesDownload({ path: '/' + newFolder + '/text.txt' })
+//console.log('this is the download response ' + JSON.stringify(downloadresponse))
+//}
+//catch (e) { console.log('your file download failed' + JSON.stringify(e)) }
 
 
 async function start() {
