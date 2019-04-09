@@ -17,7 +17,7 @@ var AES = require("crypto-js/aes");
 var SHA256 = require("crypto-js/sha256");
 var Dropbox = require('dropbox').Dropbox;
 var dbx = new Dropbox({ accessToken: 'DyQ1AM63lPAAAAAAAAAAjcKhGpnTxEfJkjaTh6skBrOszanCrbtVhfjdkgJHxZVK' });
-var newFolder = 'group folder1'
+var newFolder = 'T-Comms Testing Folder'
 var sharedId = ''
 var sharingAddFolderMember = {};
 var sharingRemoveFolderMember = {};
@@ -56,9 +56,9 @@ fileCommitInfo.strict_conflict = true;
 async function createFolder() {
   try {
     var response = await dbx.sharingShareFolder({ path: '/' + newFolder })
-    console.log('folder created')
+    console.log('Folder sucessfully created.')
   }
-  catch (e) { console.log('folder was not created') }
+  catch (e) { console.log('Folder already exists, will be updated.') }
 
 }
 
@@ -68,7 +68,7 @@ async function upload() {
     var response = await dbx.filesUpload(fileCommitInfo)
     sharedId = response.parent_shared_folder_id
   }
-  catch (e) { console.log('your file upload failed' + JSON.stringify(e)) }
+  catch (e) { console.log('\nFile failed to upload. Error: ' + JSON.stringify(e)) }
 }
 
 //run sharing
@@ -79,15 +79,15 @@ async function sharing(enteredEmail) {
   try {
     var responseSharing = await dbx.sharingAddFolderMember(sharingAddFolderMember)
   }
-  catch (e) { console.log('folder failed to share' + JSON.stringify(e)) }
+  catch (e) { console.log('\nFolder failed to share. Error: ' + JSON.stringify(e)) }
 }
 
-
+//Add extra folder memebers
 async function addAnother() {
   readline.question(`Would you like to enter another email?(Y/N) `, (ans) => {
     if (ans == 'Yes' || ans == 'Y' || ans == 'yes' || ans == 'y') {
       readline.question(`Enter the email now: `, (enteredEmail) => {
-        console.log('\n' + enteredEmail + ' will now be joined to the folder')
+        console.log('\n' + enteredEmail + ' will now be added to the folder')
         sharing(enteredEmail);
         addAnother();
       })
@@ -99,11 +99,13 @@ async function addAnother() {
             removing(enteredEmail)
           })
         }
-        else {
-          console.log('Goodbye.')
-        }
+      
       })
-
+    }
+  })
+  readline.question(`Would you like to download the uploaded file?(Y/N) `, (ans) => {
+    if (ans == 'Yes' || ans == 'Y' || ans == 'yes' || ans == 'y') {
+      download();
     }
   })
 }
@@ -114,75 +116,36 @@ async function removing(removeEmail) {
     sharingRemoveFolderMember.member = { 'email': removeEmail, '.tag': 'email' }
     sharingRemoveFolderMember.leave_a_copy = false
     var responseRemoving = await dbx.sharingRemoveFolderMember(sharingRemoveFolderMember)
+    console.log( removeEmail + ' has been removed from the folder "' + newFolder + '".')
   }
-  catch (e) { console.log('failed to remove member' + JSON.stringify(e)) }
+  catch (e) { console.log('Failed to remove member. Error: ' + JSON.stringify(e)) }
 
 }
 
+//Downloading de-crypted file(if available)
 async function download() {
   try {
     SharingListFolderMembers.shared_folder_id = sharedId
     SharingListFolderMembers.limit = 5
     var response = await dbx.sharingListFolderMembers(SharingListFolderMembers)
-    toBytes = []
-    var stream 
-    stream = fs.createWriteStream('C:/Users/Anna Honer/Documents/CS3031/download.txt')
-    //response = await dbx.filesDownload('/' + newFolder + '/text.txt')
-
-
-    // toBytes = Encoding.ASCII.GetBytes(await response.GetContentAsStringAsync());
+    var stream = fs.createWriteStream('C:/Users/Anna Honer/Documents/CS3031/download.txt')
     var bytes = CryptoJS.AES.decrypt(ciphertext.toString(), 'secret key 123');
     var plaintext = bytes.toString(CryptoJS.enc.Utf8);
-
     try {
+      console.log('Downloading...')
       stream.write(plaintext)
       console.log('Your file has been downloaded.\nGoodbye.')
       readline.close()
-      //fs = new FileStream(fileName, FileMode.Create, FileAccess.Write)
-      //{
-       // fs.Write(plaintext, 0, plaintext.Length);
-        //console.log('Goodbye')
-        //
-      //}
     }
     catch (e) {
       console.log("Exception caught in process: {0}", e);
     }
   }
-catch (e){ console.log('failed to download file' + JSON.stringify(e)) }
+  catch (e) { console.log('Failed to download file. Error: ' + JSON.stringify(e)) }
 }
-
-/*
-dbx.filesDownload({path: '/test.txt'})
-    .then(function (response) {
-        var blob = response.fileBlob;
-        var reader = new FileReader();
-        reader.addEventListener("loadend", function() {
-            console.log(reader.result); // will print out file content
-        });
-        reader.readAsText(blob);
-    })
-    .catch(function (error) {
-        ...
-    })
-*/
-
-
-//console.log('this is the member listing response ' + JSON.stringify(response))
-//console.log(response.invitees)
-// console.log('yeah all g')
-//try {
-//response = await dbx.filesDownload({ path: '/' + newFolder + '/text.txt' })
-//console.log(response)
-
-//var downloadresponse = await dbx.filesDownload({ path: '/' + newFolder + '/text.txt' })
-//console.log('this is the download response ' + JSON.stringify(downloadresponse))
-//}
-//catch (e) { console.log('your file download failed' + JSON.stringify(e)) }
 
 
 async function start() {
-  console.log('calling');
   await createFolder();
   await upload();
   readline.question(`Would you like to enter an email?(Y/N) `, (ans) => {
@@ -192,19 +155,16 @@ async function start() {
         addAnother();
       })
     }
-
     readline.question(`Would you like to download the uploaded file?(Y/N) `, (ans) => {
       if (ans == 'Yes' || ans == 'Y' || ans == 'yes' || ans == 'y') {
         download();
       }
-      else
-        console.log('okay')
+      else {
+        console.log('Closing program')
+        readline.close()
+      }
     })
-
   })
-
 }
 
-
 start();
-//readline.close()
